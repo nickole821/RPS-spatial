@@ -1,11 +1,9 @@
 import numpy as np
 import pandas as pd
 import os
-import time
-from tqdm import tqdm, trange
-import sys
 import matplotlib.pyplot as plt
 import pickle
+from itertools import product
 
 # variaveis
 L = 100 # lado do lattice
@@ -13,18 +11,14 @@ n_lagartos = L**2 # lagartos que cabem no lattice
 estrategias = ['O', 'Y', 'B'] # estratégias possíveis
 index_map = {'O': 0, 'Y': 1, 'B': 2}
 n_geracoes = 100
-n_pop = 3 # número de populações independentes
+n_pop = 100 # número de populações independentes
 prob_mutacao = None # probabilidade de mutação a cada geração
 minimo_O = float(input("Minimo O: "))
 maximo_O = float(input("Maximo O: "))
-inclinacao_O = float(input("Inclinacao O: "))
+inclinacao_O = np.round(np.arange(0.01, 0.06, 0.01),2)
 minimo_B = float(input("Minimo B: "))
 maximo_B = float(input("Maximo B: "))
-inclinacao_B = float(input("Inclinacao B: "))
-tipo = f"O_{minimo_O}-{maximo_O}_incO{inclinacao_O}_B{minimo_B}-{maximo_B}_incB{inclinacao_B}"
-
-output_dir = "C:\\Unicamp\\mestrado\\simulacoes\\RPS-python\\RPS-POO\\outputs\\custo_Y\\" + tipo + "/"
-os.makedirs(output_dir, exist_ok=True)
+inclinacao_B = np.round(np.arange(0.01, 0.06, 0.01),2)
 
 class Lagarto:
   def __init__(self, i, j, estrategia, fitness, coord_vizinhos, estrategia_vizinhos, coord_vizinhanca_extendida, estrategia_vizinhanca_extendida, t, n_vizinhos, n_vizinhos_realizado):
@@ -151,25 +145,6 @@ def calcular_fitness(lagarto, index_map, matriz_posicao, minimo_O, maximo_O, inc
 
 calcular_freq = lambda mat: np.array([np.sum(mat == s) / (L ** 2) for s in ['O', 'Y', 'B']]) # calcula a frequência de cada estratégia no lattice na ordem O, Y, B
 
-def calcular_custo(n_vizinhos, inclinacao, minimo, limite):
-    custo = (n_vizinhos * inclinacao) + minimo
-    return np.minimum(custo, limite)
-
-plt.figure(figsize=(10, 6))
-vizinho = np.linspace(0, 50, 100)
-
-c_values = calcular_custo(vizinho, inclinacao_O, minimo_O, maximo_O)
-b_values = calcular_custo(vizinho, inclinacao_B, minimo_B, maximo_B)
-plt.plot(vizinho, c_values, label='Custo (O)', color='orange')
-plt.plot(vizinho, b_values, label='Custo (B)', color='blue')
-
-plt.xlabel('Vizinhos (n)')
-plt.ylabel('Custo')
-plt.legend()
-plt.grid()
-plt.savefig(output_dir + "grafico_cO_cB.png")
-plt.show()
-
 def atualizar_lagartos(lagartos): # função que atualiza as estratégias dos lagartos com base no fitness dos vizinhos
     novas_estrategias = {} # Dicionário para armazenar as novas estratégias
     novas_vizinhancas = {} # Dicionário para armazenar as novas vizinhanças
@@ -234,13 +209,14 @@ def atualizar_lagartos(lagartos): # função que atualiza as estratégias dos la
 
 
 # iniciando a simulação
-def simulacao(n_geracoes, L, n_lagartos, estrategias, index_map, n_pop, minimo_O, maximo_O, inclinacao_O, minimo_B, maximo_B, inclinacao_B, prob_mutacao = None, seed = None):
+def simulacao(n_geracoes, L, n_lagartos, estrategias, index_map, n_pop, minimo_O, maximo_O, inclinacao_O, minimo_B, maximo_B, inclinacao_B, output_dir, prob_mutacao = None, seed = None):
     matriz_frequencias = np.full((n_geracoes + 1, n_pop, len(estrategias)), np.nan, dtype=float) # cria uma matriz para armazenar as frequências em cada instante dos loops
     matriz_n_vizinhos_media = np.full((n_geracoes + 1, n_pop, len(estrategias)), np.nan, dtype=float) # cria uma matriz para armazenar vizinhos
     n_vizinhos_individual = []  # lista para armazenar todos os números de vizinhos
     historico_estrategias = [] # lista para armazenar o histórico de estratégias de cada população
 
     for pop in range(n_pop): # loop para cada população independente
+        print(f"População {pop + 1} de {n_pop}") # debug
         if seed is not None:
           np.random.seed(seed + pop) # coloca uma semente diferente pra cada pop, garantindo independência e reproducibilidade
 
@@ -260,7 +236,7 @@ def simulacao(n_geracoes, L, n_lagartos, estrategias, index_map, n_pop, minimo_O
         matriz_n_vizinhos_media[0, pop, :] = calcular_media_vizinhos(lista_lagartos, estrategias)
 
         for t in range(1, n_geracoes + 1): # loop para cada geração dentro da população
-          # determinando os vizinhos
+          print(f"Geração {t} de {n_geracoes}") # debug
           for lagarto in lista_lagartos:
             lagarto.calcular_coord_vizinhos(L) # calcula as coordenadas dos vizinhos
             lagarto.obter_estrategia_vizinhos(matriz_posicao) # obtém as estratégias dos vizinhos
@@ -328,101 +304,131 @@ def simulacao(n_geracoes, L, n_lagartos, estrategias, index_map, n_pop, minimo_O
 
     return matriz_frequencias, matriz_n_vizinhos_media, n_vizinhos_individual, historico_estrategias
 
-freq, n_vizinhos, n_vizinhos_individual, historico_estrategias = simulacao(n_geracoes, L, n_lagartos, estrategias, index_map, n_pop, minimo_O, maximo_O, inclinacao_O, minimo_B, maximo_B, inclinacao_B, prob_mutacao, seed = 0)
+def calcular_custo(n_vizinhos, inclinacao, minimo, limite):
+    custo = (n_vizinhos * inclinacao) + minimo
+    return np.minimum(custo, limite)
 
-# python
-import numpy as np
-import pandas as pd
-import os
-import matplotlib.pyplot as plt
+for inclinacao_O, inclinacao_B in product(inclinacao_O, inclinacao_B):
 
-# Parâmetros
-cores = {"O": "#FD9800", "B": "#0047B3", "Y": "#FFF237"}
+    tipo = f"O_{minimo_O}-{maximo_O}_incO{inclinacao_O}_B{minimo_B}-{maximo_B}_incB{inclinacao_B}"
+    vizinho = np.linspace(0, 50, 100)
 
-# Carregar dados salvos
-freqs = []
-n_vizinhos = []
-for pop in range(n_pop):
-    freq_path = os.path.join(output_dir, f"pop_{pop}_matriz_frequencias.npy")
-    viz_path = os.path.join(output_dir, f"pop_{pop}_matriz_n_vizinhos_media.npy")
-    freqs.append(np.load(freq_path))
-    n_vizinhos.append(np.load(viz_path))
-freqs = np.stack(freqs, axis=1)  # shape: (n_geracoes+1, n_pop, 3)
-n_vizinhos = np.stack(n_vizinhos, axis=1)  # shape: (n_geracoes+1, n_pop, 3)
+    c_values = calcular_custo(vizinho, inclinacao_O, minimo_O, maximo_O)
+    #c_values = calcular_custo(vizinho, inclinacao = 0.01, minimo = -1, limite = 1.5)
+    fitness_Y_O = 2 - c_values
+    b_values = calcular_custo(vizinho, inclinacao_B, minimo_B, maximo_B)
+    #b_values = calcular_custo(vizinho, inclinacao = 0.01, minimo = 1.5, limite = 3)
+    fitness_Y_B = 2 - b_values
+    cruzam = np.any(np.diff(np.sign(fitness_Y_O - fitness_Y_B)) != 0)
 
-# Média das populações
-freqs_mean = np.mean(freqs, axis=1)  # shape: (n_geracoes+1, 3)
-freqs_std = np.std(freqs, axis=1)
-n_vizinhos_mean = np.mean(n_vizinhos, axis=1)  # shape: (n_geracoes+1, 3)
-n_vizinhos_std = np.std(n_vizinhos, axis=1)
+    if cruzam == True:
+        pass
 
-# Testes de valores plausíveis
-if not np.allclose(np.sum(freqs_mean, axis=1), 1):
-    raise ValueError("Frequências médias não somam 1 em alguma geração.")
-if not np.all((n_vizinhos_mean >= 0) & (n_vizinhos_mean <= 48)):
-    raise ValueError("Número médio de vizinhos fora do intervalo [0,48].")
-if not np.all((freqs_mean >= 0) & (freqs_mean <= 1)):
-    raise ValueError("Frequências médias fora do intervalo [0,1].")
+    else:
+        output_dir = "C:\\Unicamp\\mestrado\\simulacoes\\RPS-python\\RPS-POO\\outputs\\custo_Y\\" + tipo + "/"
+        os.makedirs(output_dir, exist_ok=True)
+        
+        plt.figure(figsize=(10, 6))
 
-# DataFrames tidy para plot
-linhas_freq = []
-linhas_viz = []
-for t in range(freqs_mean.shape[0]):
-    for idx, strategy in enumerate(estrategias):
-        linhas_freq.append({"t": t, "estrategia": strategy, "frequencia": freqs_mean[t, idx]})
-        linhas_viz.append({"t": t, "estrategia": strategy, "n_vizinhos": n_vizinhos_mean[t, idx]})
-df_freq = pd.DataFrame(linhas_freq)
-df_viz = pd.DataFrame(linhas_viz)
+        plt.plot(vizinho, fitness_Y_O, label='Y ganha de O', color='orange')
+        plt.plot(vizinho, fitness_Y_B, label='Y ganha de B', color='blue')
 
-# Gráfico de frequência média
-plt.figure(figsize=(10, 5))
-for idx, strategy in enumerate(estrategias):
-    dados = df_freq[df_freq["estrategia"] == strategy]
-    # Média
-    plt.plot(dados["t"], dados["frequencia"], label=strategy, color=cores[strategy])
-    # Desvio padrão (faixa)
-    plt.fill_between(
-        dados["t"],
-        freqs_mean[:, idx] - freqs_std[:, idx],
-        freqs_mean[:, idx] + freqs_std[:, idx],
-        color=cores[strategy], alpha=0.2
-    )
-plt.title("Frequência média das populações ao longo do tempo")
-plt.xlabel("Gerações")
-plt.ylabel("Frequência média")
-plt.ylim(0, 1)
-plt.legend()
-plt.grid(True)
-plt.savefig(output_dir + "frequencia_media.png")
-plt.show()
+        plt.xlabel('Vizinhos (n)')
+        plt.ylabel('Fitness Y')
+        plt.legend()
+        plt.grid()
+        plt.savefig(os.path.join(output_dir, "grafico_cO_cB.png"))
+        plt.show()
 
-# Gráfico de frequência média + linhas individuais
-plt.figure(figsize=(10, 5))
-for idx, strategy in enumerate(estrategias):
-    # Todas as simulações (linhas claras)
-    for pop in range(n_pop):
-        plt.plot(freqs[:, pop, idx], color=cores[strategy], alpha=0.1)
-    # Média (linha escura)
-    plt.plot(freqs_mean[:, idx], color=cores[strategy], label=strategy, linewidth=2)
-plt.title("Frequência das estratégias ao longo do tempo")
-plt.xlabel("Gerações")
-plt.ylabel("Frequência")
-plt.ylim(0, 1)
-plt.legend()
-plt.grid(True)
-plt.savefig(output_dir + "frequencia_individual_e_media.png")
-plt.show()
+        freq, n_vizinhos, n_vizinhos_individual, historico_estrategias = simulacao(n_geracoes, L, n_lagartos, estrategias, index_map, n_pop, minimo_O, maximo_O, inclinacao_O, minimo_B, maximo_B, inclinacao_B, output_dir, prob_mutacao, seed = 0)
 
-# Gráfico de vizinhos médio
-plt.figure(figsize=(10, 5))
-for strategy in estrategias:
-    dados = df_viz[df_viz["estrategia"] == strategy]
-    plt.plot(dados["t"], dados["n_vizinhos"], label=strategy, color=cores[strategy])
-plt.title("Número médio de vizinhos das populações ao longo do tempo")
-plt.xlabel("Gerações")
-plt.ylabel("Vizinhos médios")
-plt.ylim(0, 49)
-plt.legend()
-plt.grid(True)
-plt.savefig(output_dir + "vizinhos_medios.png")
-plt.show()
+        # Parâmetros
+        cores = {"O": "#FD9800", "B": "#0047B3", "Y": "#FFF237"}
+
+        # Carregar dados salvos
+        freqs = []
+        n_vizinhos = []
+        for pop in range(n_pop):
+            freq_path = os.path.join(output_dir, f"pop_{pop}_matriz_frequencias.npy")
+            viz_path = os.path.join(output_dir, f"pop_{pop}_matriz_n_vizinhos_media.npy")
+            freqs.append(np.load(freq_path))
+            n_vizinhos.append(np.load(viz_path))
+        freqs = np.stack(freqs, axis=1)  # shape: (n_geracoes+1, n_pop, 3)
+        n_vizinhos = np.stack(n_vizinhos, axis=1)  # shape: (n_geracoes+1, n_pop, 3)
+
+        # Média das populações
+        freqs_mean = np.mean(freqs, axis=1)  # shape: (n_geracoes+1, 3)
+        freqs_std = np.std(freqs, axis=1)
+        n_vizinhos_mean = np.mean(n_vizinhos, axis=1)  # shape: (n_geracoes+1, 3)
+        n_vizinhos_std = np.std(n_vizinhos, axis=1)
+
+        # Testes de valores plausíveis
+        if not np.allclose(np.sum(freqs_mean, axis=1), 1):
+            raise ValueError("Frequências médias não somam 1 em alguma geração.")
+        if not np.all((n_vizinhos_mean >= 0) & (n_vizinhos_mean <= 48)):
+            raise ValueError("Número médio de vizinhos fora do intervalo [0,48].")
+        if not np.all((freqs_mean >= 0) & (freqs_mean <= 1)):
+            raise ValueError("Frequências médias fora do intervalo [0,1].")
+
+        # DataFrames tidy para plot
+        linhas_freq = []
+        linhas_viz = []
+        for t in range(freqs_mean.shape[0]):
+            for idx, strategy in enumerate(estrategias):
+                linhas_freq.append({"t": t, "estrategia": strategy, "frequencia": freqs_mean[t, idx]})
+                linhas_viz.append({"t": t, "estrategia": strategy, "n_vizinhos": n_vizinhos_mean[t, idx]})
+        df_freq = pd.DataFrame(linhas_freq)
+        df_viz = pd.DataFrame(linhas_viz)
+
+        # Gráfico de frequência média
+        plt.figure(figsize=(10, 5))
+        for idx, strategy in enumerate(estrategias):
+            dados = df_freq[df_freq["estrategia"] == strategy]
+            # Média
+            plt.plot(dados["t"], dados["frequencia"], label=strategy, color=cores[strategy])
+            # Desvio padrão (faixa)
+            plt.fill_between(
+                dados["t"],
+                freqs_mean[:, idx] - freqs_std[:, idx],
+                freqs_mean[:, idx] + freqs_std[:, idx],
+                color=cores[strategy], alpha=0.2
+            )
+        plt.title("Frequência média das populações ao longo do tempo")
+        plt.xlabel("Gerações")
+        plt.ylabel("Frequência média")
+        plt.ylim(0, 1)
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(os.path.join(output_dir, "frequencia_media.png"))
+        plt.show()
+
+        # Gráfico de frequência média + linhas individuais
+        plt.figure(figsize=(10, 5))
+        for idx, strategy in enumerate(estrategias):
+            # Todas as simulações (linhas claras)
+            for pop in range(n_pop):
+                plt.plot(freqs[:, pop, idx], color=cores[strategy], alpha=0.1)
+            # Média (linha escura)
+            plt.plot(freqs_mean[:, idx], color=cores[strategy], label=strategy, linewidth=2)
+        plt.title("Frequência das estratégias ao longo do tempo")
+        plt.xlabel("Gerações")
+        plt.ylabel("Frequência")
+        plt.ylim(0, 1)
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(os.path.join(output_dir, "frequencia_individual_e_media.png"))
+        plt.show()
+
+        # Gráfico de vizinhos médio
+        plt.figure(figsize=(10, 5))
+        for strategy in estrategias:
+            dados = df_viz[df_viz["estrategia"] == strategy]
+            plt.plot(dados["t"], dados["n_vizinhos"], label=strategy, color=cores[strategy])
+        plt.title("Número médio de vizinhos das populações ao longo do tempo")
+        plt.xlabel("Gerações")
+        plt.ylabel("Vizinhos médios")
+        plt.ylim(0, 49)
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(os.path.join(output_dir, "vizinhos_medios.png"))
+        plt.show()
