@@ -1,2 +1,4 @@
 outputs/sensibilidade/vizinhosY_e_O/frequencias_total.csv
-RPS-python/old
+RPS-python
+*.pkl
+*.npy
