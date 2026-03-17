@@ -24,3 +24,6 @@ plot <- filter(data_media, t == 200) %>%
 
 ggsave("outputs/vizinhanca_aprendizado-interacao/LN_diferente_IN_homogeneo/plot.png",
        plot, width = 15, height = 10, units = "cm", dpi = 300)
+
+data_permanencia <- data %>%
+  group_by(t, custo, LN) %>%
