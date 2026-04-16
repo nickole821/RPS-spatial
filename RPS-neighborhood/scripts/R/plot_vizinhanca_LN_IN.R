@@ -1,16 +1,17 @@
 library(tidyverse)
 library(ggtern)
+library(cowplot)
 
-data <- read_csv("outputs/vizinhanca_aprendizado-interacao/LN_diferente_IN_homogeneo/resultados_completos.csv")
+data <- read_csv("outputs/vizinhanca_aprendizado-interacao/LN_igual/matriz_1-c/resultados_completos.csv")
 head(data)
 tail(data)
 
 data$LN <- as.factor(data$LN)
 
-campo_medio <- data.frame("freq_O" = c(0, 0.0487805, 0.205128, 0.378378, 0.336485, 1, 1),
-                             "freq_Y" = c(0.444444, 0.390244, 0.358974, 0.324324, 0.440939, 0, 0),
-                             "freq_B" = c(0.555556, 0.560976, 0.435897, 0.297297, 0.222576, 0, 0),
-                             "custo" = c(0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4))
+campo_medio <- data.frame("freq_O" = c(1, 1, 0.338405, 0.517859, 0.490047, 0.467648, 0.45068, 0.437501, 0.426971, 0.418366, 0.411214, 0.405173, 0.399999),
+                          "freq_Y" = c(0, 0, 0.445464, 0.299715, 0.301992, 0.306475, 0.309878, 0.312506, 0.314604, 0.316326, 0.317758, 0.318965, 0.32),
+                          "freq_B" = c(0, 0, 0.216131, 0.555556, 0.207961, 0.225877, 0.239442, 0.249993, 0.258426, 0.265308, 0.271027, 0.275862, 0.28),
+                          "custo" = c(-0.2, -0.1, 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0))
 campo_medio
 
 data_media <- data %>%
@@ -28,18 +29,23 @@ plot_Y <- filter(data_media, t == 200) %>%
   ggplot(aes(x = custo, y = freq_Y_media, colour = LN)) +
   geom_line() +
   geom_point() +
+  #geom_ribbon(aes(ymin = freq_Y_media - sd_Y, ymax = freq_Y_media + sd_Y), alpha = 0.3) +
   geom_line(data = campo_medio, aes(x = custo, y = freq_Y, colour = "Mean field"),
             inherit.aes = FALSE) +
   geom_point(data = campo_medio, aes(x = custo, y = freq_Y, colour = "Mean field"),
              shape = 3, inherit.aes = FALSE) +
-  labs(x = "Custo", y = "Frequência média de Y entre simulações (t = 200)")+
+  labs(x = "a", y = "Mean frequency of Y (t = 200)")+
   scale_color_manual(values = c("8" = "#ffe169", "24" = "#6c757d", 
                                 "48" = "#dbb42c", "80" = "#a47e1b",
                                 "120" = "#76520e", "Mean field" = "black"))+
-  theme_minimal()
+  #scale_fill_manual(values = c("8" = "#ffe169", "24" = "#6c757d", 
+                                #"48" = "#dbb42c", "80" = "#a47e1b",
+                                #"120" = "#76520e", "Mean field" = "black"))+
+  theme_minimal() +
+  scale_y_continuous(limits = c(0,1))
 
 plot_Y
-ggsave("outputs/vizinhanca_aprendizado-interacao/LN_diferente_IN_homogeneo/plot_Y.png",
+ggsave("outputs/vizinhanca_aprendizado-interacao/LN_diferente_Y/matriz_1-c/plot_Y.png",
        plot_Y, width = 15, height = 10, units = "cm", dpi = 300)
 
 plot_O <- filter(data_media, t == 200) %>%
@@ -49,15 +55,16 @@ plot_O <- filter(data_media, t == 200) %>%
   geom_line(data = campo_medio, aes(x = custo, y = freq_O, colour = "Mean field"),
             inherit.aes = FALSE) +
   geom_point(data = campo_medio, aes(x = custo, y = freq_O, colour = "Mean field"),
-            shape = 3, inherit.aes = FALSE) +
-  labs(x = "Custo", y = "Frequência média de O entre simulações (t = 200)")+
+             shape = 3, inherit.aes = FALSE) +
+  labs(x = "a", y = "Mean frequency of O (t = 200)")+
   scale_color_manual(values = c("8" = "#FFD8A8", "24" = "#6c757d", 
                                 "48" = "#FFA94D", "80" = "#FF7A00",
                                 "120" = "#8f250c",  "Mean field" = "black"))+
-  theme_minimal()
+  theme_minimal() +
+  scale_y_continuous(limits = c(0,1))
 
 plot_O
-ggsave("outputs/vizinhanca_aprendizado-interacao/LN_diferente_IN_homogeneo/plot_O.png",
+ggsave("outputs/vizinhanca_aprendizado-interacao/LN_diferente_Y/matriz_1-c/plot_O.png",
        plot_O, width = 15, height = 10, units = "cm", dpi = 300)
 
 plot_B <- filter(data_media, t == 200) %>%
@@ -68,15 +75,72 @@ plot_B <- filter(data_media, t == 200) %>%
             inherit.aes = FALSE) +
   geom_point(data = campo_medio, aes(x = custo, y = freq_B, colour = "Mean field"),
              shape = 3, inherit.aes = FALSE) +
-  labs(x = "Custo", y = "Frequência média de B entre simulações (t = 200)")+
+  labs(x = "a", y = "Mean frequency of B (t = 200)")+
   scale_color_manual(values = c("8" = "#ADE1FB", "24" = "#6c757d", 
                                 "80" = "#266CA9", "48" = "#48cae4",
                                 "120" = "#284b63", "Mean field" = "black"))+
-  theme_minimal()
+  theme_minimal() +
+  scale_y_continuous(limits = c(0,1))
 
 plot_B
-ggsave("outputs/vizinhanca_aprendizado-interacao/LN_diferente_IN_homogeneo/plot_B.png",
+ggsave("outputs/vizinhanca_aprendizado-interacao/LN_diferente_Y/matriz_1-c/plot_B.png",
        plot_B, width = 15, height = 10, units = "cm", dpi = 300)
+
+
+data_media_long <- data_media %>%
+  rename(freq_O = freq_O_media, freq_B = freq_B_media, freq_Y = freq_Y_media) 
+data_media_long <- data_media_long %>%
+  pivot_longer(
+    cols = c(freq_O, sd_O,
+             freq_B, sd_B,
+             freq_Y, sd_Y),
+    names_to = c(".value", "estrategia"),
+    names_pattern = "(freq|sd)_(.*)")
+data_media_long$estrategia <- as.factor(data_media_long$estrategia)
+
+campo_medio_long <- campo_medio %>%
+  pivot_longer(cols = c(freq_O, freq_Y, freq_B), 
+               names_to = c(".value", "estrategia"),
+               names_pattern = "(freq)_(.*)")
+
+plot_grid <- data_media_long %>%
+  filter(t == 200) %>%
+  ggplot(aes(x = custo, y = freq, shape = LN, colour = LN))+
+  geom_point() +
+  geom_line() +
+  geom_line(data = campo_medio_long, 
+            aes(x = custo, y = freq, shape = "Mean field", colour = "Mean field"),
+            inherit.aes = FALSE) +
+  geom_point(data = campo_medio_long, 
+             aes(x = custo, y = freq, shape = "Mean field", colour = "Mean field"),
+             inherit.aes = FALSE)+
+  facet_wrap(~estrategia) +
+  scale_color_manual(values = c(
+    "8" = "#fcab10",
+    "24" = "#6c757d",
+    "48" = "#f8333c",
+    "80" = "#2b9eb3",
+    "120" = "#a1cca5",
+    "Mean field" = "black"
+  )) +
+  scale_shape_manual(values = c(
+    "8" = 16,
+    "24" = 17,
+    "48" = 15,
+    "80" = 18,
+    "120" = 3,
+    "Mean field" = 8
+  )) +
+  theme_minimal(base_size = 12) +
+  labs(x = "a", y = "Mean frequency of strategy (t = 200)",
+       colour = "Number of\nlearning neighbours", shape = "Number of\nlearning neighbours") +
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)
+  )
+
+plot_grid
+ggsave("outputs/vizinhanca_aprendizado-interacao/LN_igual/matriz_1-c/plot_grid.png",
+       plot_grid, width = 20, height = 10, units = "cm", dpi = 800)
 
 data_permanencia <- data %>%
   group_by(custo, LN, t, pop) %>%
@@ -110,66 +174,40 @@ campo_medio_permanencia <- campo_medio %>%
 campo_medio_permanencia
 
 plot_permanencia <- data_permanencia_t200_media %>%
-  ggplot(aes(x = custo, y = media_permanencia, colour = LN)) +
+  ggplot(aes(x = custo, y = media_permanencia, colour = LN, shape = LN)) +
   geom_line() +
   geom_point() +
   geom_line(data = campo_medio_permanencia, aes(x = custo, y = permanencia_estrat, 
-                                                colour = "Mean field"),
+                                                shape = "Mean field", colour = "Mean field"),
             inherit.aes = FALSE) +
   geom_point(data = campo_medio_permanencia, aes(x = custo, y = permanencia_estrat,
-                                                 colour = "Mean field"),
-             shape = 3, inherit.aes = FALSE) +
-  labs(x = "Custo", y = "Número de estratégias coexistindo\npor simulação no t = 200 (média entre réplicas)")+
-  scale_color_manual(values = c("80" = "#2b9eb3", "24" = "#6c757d", 
-                                "48" = "#f8333c", "8" = "#fcab10", 
-                                "120" = "#a1cca5", "Mean field" = "black"))+
-  theme_minimal()
+                                                 shape = "Mean field", colour = "Mean field"),
+             inherit.aes = FALSE) +
+  labs(x = "a", y = "Mean number os coexisting\nstrategies in t = 200",
+       colour = "Number of\nlearning neighbours", shape = "Number of\nlearning neighbours")+
+  scale_color_manual(values = c(
+    "8" = "#fcab10",
+    "24" = "#6c757d",
+    "48" = "#f8333c",
+    "80" = "#2b9eb3",
+    "120" = "#a1cca5",
+    "Mean field" = "black"
+  )) +
+  scale_shape_manual(values = c(
+    "8" = 16,
+    "24" = 17,
+    "48" = 15,
+    "80" = 18,
+    "120" = 3,
+    "Mean field" = 8
+  )) +
+  theme_minimal(base_size = 12) +
+  scale_y_continuous(limits = c(0,3)) +
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)
+  )
 
 plot_permanencia
 
-ggsave("outputs/vizinhanca_aprendizado-interacao/LN_diferente_IN_homogeneo/plot_permanencia.png",
-       plot_permanencia, width = 15, height = 10, units = "cm", dpi = 300)
-
-dados_estado_final <- data %>%
-  filter(t == 200) %>%
-  mutate(
-    pres_O = freq_O > 0.01,
-    pres_Y = freq_Y > 0.01,
-    pres_B = freq_B > 0.01,
-    n_presentes = pres_O + pres_Y + pres_B,
-    
-    estado_final = case_when(
-      n_presentes == 1 & pres_O ~ "O",
-      n_presentes == 1 & pres_Y ~ "Y",
-      n_presentes == 1 & pres_B ~ "B",
-      
-      n_presentes == 2 & !pres_O ~ "B e Y",
-      n_presentes == 2 & !pres_Y ~ "B e O",
-      n_presentes == 2 & !pres_B ~ "Y e O",
-      
-      n_presentes == 3 ~ "O, Y e B",
-      
-      TRUE ~ "nenhuma"
-    )
-  ) %>%
-  count(custo, LN, estado_final) %>%
-  group_by(custo, LN) %>%
-  mutate(prop = n / sum(n))
-
-plot_estado_final <- ggplot(dados_estado_final,
-       aes(x = custo, y = prop, color = estado_final)) +
-  geom_line(size = 1) +
-  geom_point(size = 2) +
-  facet_wrap(~LN) +
-  labs(
-    x = "Custo",
-    y = "Probabilidade",
-    color = "Estado final"
-  ) +
-  scale_color_manual(values = c("B" = "#072ac8", "B e Y" = "#2b9348", 
-                                "Y" = "#ffdd00", "O" = "#ff7b00", 
-                                "O, Y e B" = "#db00b6")) +
-  theme_minimal()
-
-ggsave("outputs/vizinhanca_aprendizado-interacao/LN_diferente_IN_homogeneo/plot_estado_final.png",
-       plot_estado_final, width = 20, height = 15, units = "cm", dpi = 300)
+ggsave("outputs/vizinhanca_aprendizado-interacao/LN_igual/matriz_1-c/plot_permanencia.png",
+       plot_permanencia, width = 20, height = 10, units = "cm", dpi = 800)

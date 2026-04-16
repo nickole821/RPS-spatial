@@ -25,12 +25,12 @@ matriz_payoff = np.array([[1, c, b],
 index_map = {'O': 0, 'Y': 1, 'B': 2}
 
 n_geracoes = 500
-n_pop = 1
+n_pop = 100
 z_O_inicial = int(input("Número de vizinhos inicial para O (5x): "))
 z_Y_inicial = int(input("Número de vizinhos inicial para Y (5x): "))
 z_B = 8
 sobreposicao = "n"
-fermi = "s"
+fermi = input("Usar Fermi Rule? (s/n): ")
 if fermi.lower() == 's':
     K = 0.001
     A = None
@@ -39,10 +39,10 @@ if fermi.lower() == 's':
     wY = None
 else:
     K = None
-    A = float(input("Valor de A: "))
-    wO = float(input("Valor de wO: "))
-    wB = float(input("Valor de wB: "))
-    wY = float(input("Valor de wY: "))
+    A = None
+    wO = None
+    wB = None
+    wY = None
 
 
 output_dir = f"C:/Unicamp/mestrado/simulacoes/main/RPS-neighborhood/outputs/network/sensibility/"
@@ -142,7 +142,22 @@ class Lagarto:
             #print(f"Adotou a estratégia do vizinho")
             return vizinho_escolhido.estrategia, vizinho_escolhido.n_vizinhos
         return self.estrategia, self.n_vizinhos
-
+    
+    def adaptative_update(self, G):
+        lista_vizinhos = vizinhos_unicos_rede(G, self)
+        for vizinho in lista_vizinhos:
+            vizinho.calcular_fitness_rede(G)
+        melhor_vizinho = max(lista_vizinhos, key=lambda v: v.fitness)
+        if melhor_vizinho.fitness > self.fitness:
+            return melhor_vizinho.estrategia, melhor_vizinho.n_vizinhos
+        elif melhor_vizinho.fitness == self.fitness:
+            a = np.random.rand()
+            if a < 0.5:
+                return melhor_vizinho.estrategia, melhor_vizinho.n_vizinhos
+            else:
+                return self.estrategia, self.n_vizinhos
+        else:
+            return self.estrategia, self.n_vizinhos
 # ==============================
 # FUNÇÕES AUXILIARES
 # ==============================
@@ -188,7 +203,6 @@ def media_vizinhos_por_estrategia_rede(G, lista_lagartos):
         graus = [grau_unico(G, l) for l in lista_lagartos if l.estrategia == e]
         medias.append(np.mean(graus) if len(graus) > 0 else np.nan)
     return medias
-
 
 # ==============================
 # SIMULAÇÃO
@@ -244,10 +258,18 @@ def simulacao(z_O, z_Y, z_B, fermi, K, sobreposicao, seed=None):
             print(f"População {pop+1} - Geração {t+1}/{n_geracoes}")
 
             mudancas = []
-            for lagarto in lista_lagartos:
-                lagarto.calcular_fitness_rede(G)
-                estrategia_escolhida, vizinhanca_escolhida = lagarto.fermi_update(G, K)
-                mudancas.append((lagarto, estrategia_escolhida, vizinhanca_escolhida))
+            
+            if fermi.lower() == 's':
+                for lagarto in lista_lagartos:
+                    lagarto.calcular_fitness_rede(G)
+                    estrategia_escolhida, vizinhanca_escolhida = lagarto.fermi_update(G, K)
+                    mudancas.append((lagarto, estrategia_escolhida, vizinhanca_escolhida))
+            
+            else:
+                for lagarto in lista_lagartos:
+                    lagarto.calcular_fitness_rede(G)
+                    estrategia_escolhida, vizinhanca_escolhida = lagarto.adaptative_update(G)
+                    mudancas.append((lagarto, estrategia_escolhida, vizinhanca_escolhida))
             
             for lagarto, estrategia_escolhida, vizinhanca_escolhida in mudancas:
                     lagarto.estrategia = estrategia_escolhida
